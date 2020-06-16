@@ -25,7 +25,15 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    // Airline Variables:
+    uint256 private constant AIRLINE_FEE = 10 ether;
+    uint256 private constant AIRLINE_CONSENSUS = 4;
+    uint256 private constant AIRLINE_CONSENSUS_PERCENTAGE = 50;
+
     address private contractOwner;          // Account used to deploy contract
+
+    // Flight Surety Data Contract:
+    FlightSuretyData data;
 
     struct Flight {
         bool isRegistered;
@@ -99,7 +107,6 @@ contract FlightSuretyApp {
     {
         return (success, 0);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
