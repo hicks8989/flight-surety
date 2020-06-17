@@ -22,6 +22,7 @@ contract FlightSuretyData {
     // Variable to count all airlines:
     uint256 private airlineCount;
     mapping (address => Airline) airlines;
+    mapping (address => uint256) airlineBalances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -103,7 +104,7 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline(address _address, bytes32 name) external pure
+    function registerAirline(address _address, bytes32 name) external requireIsOperational pure
     {
         // Register a new airline with provided information:
         airlines[_address] = Airline(name, true, false);
@@ -127,6 +128,15 @@ contract FlightSuretyData {
     function getAirline(address _address) external view returns(bytes32, bool, bool) {
         Airline memory airline = airlines[_address];
         return (airline.name, airline.isRegistered, airline.hasPaidFee);
+    }
+
+   /**
+    * @dev Pay the required airline fee
+    *
+    */
+    function payAirlineFee(address _address, uint256 value) external requireIsOperational {
+        airlineBalances[_address] = value;
+        airlines[_address].hasPaidFee = true;
     }
 
    /**

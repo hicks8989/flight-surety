@@ -34,6 +34,7 @@ contract FlightSuretyApp {
 
     // Flight Surety Data Contract:
     FlightSuretyData data;
+    address payable flightSuretyDataAddress;
 
     struct Flight {
         bool isRegistered;
@@ -72,6 +73,28 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireAirlineRegistered(address _address)
+    {
+        bool isRegistered;
+        ( , isRegistered, ) = data.getAirline(_address);
+        require(isRegistered, "Provided airline is not registered");
+        _;
+
+    }
+
+    modifier requireFee(uint256 fee)
+    {
+        require(msg.value >= fee, "Fee must be met in order to continue");
+        _;
+    }
+
+    /********************************************************************************************/
+    /*                                       EVENTS                                             */
+    /********************************************************************************************/
+
+    event AirlineRegistered(address _address);
+    event AirlineFeePaid(address _address, uint256 value);
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -80,9 +103,12 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor(address dataAddress) public
+    constructor(address payable dataAddress) public
     {
         contractOwner = msg.sender;
+
+        // Save dataAddress
+        flightSuretyDataAddress = dataAddress;
 
         // Get data from data contract:
         data = FlightSuretyData(dataAddress);
@@ -122,6 +148,17 @@ contract FlightSuretyApp {
 
     function _registerAirline(address _address, bytes32 name) internal {
         data.registerAirline(_address, name);
+        emit AirlineRegistered(_address);
+    }
+
+    function payAirlineFee(address _address) external payable requireAirlineRegistered(_address) requireFee(AIRLINE_FEE) {
+        flightSuretyDataAddress.transfer(msg.value);
+        _payAirlineFee(_address, msg.value);
+    }
+
+    function _payAirlineFee(address _address, uint256 value) internal {
+        data.payAirlineFee(_address, msg.value);
+        emit AirlineFeePaid(_address, value);
     }
 
    /**
@@ -320,7 +357,9 @@ contract FlightSuretyApp {
 // Contract Stub:
 contract FlightSuretyData {
     function registerAirline(address airline, bytes32 name) external view returns(uint256);
+    function payAirlineFee(address airline, uint256 value) external;
     function getAirlineCount() external view returns(uint256);
+    function getAirline(address) external view returns(bytes32, bool, bool);
     function buy() external payable;
     function creditInsurees() external pure;
     function pay() external pure;
