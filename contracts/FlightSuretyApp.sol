@@ -80,9 +80,12 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor() public
+    constructor(address dataAddress) public
     {
         contractOwner = msg.sender;
+
+        // Get data from data contract:
+        data = flightSuretyData(dataAddress);
     }
 
     /********************************************************************************************/
@@ -103,9 +106,18 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */
-    function registerAirline() external pure returns(bool success, uint256 votes)
+    function registerAirline(address airline, bytes32 airlineName) external pure returns(bool success, uint256 votes)
     {
-        return (success, 0);
+        // Get the total number of airlines:
+        uint256 numAirlines = data.getAirlineCount();
+        // Check if it is greater than the consensus variable:
+        if(numAirlines > AIRLINE_CONSENSUS) {
+            // Get votes:
+
+        } else {
+            // Do something
+
+        }
     }
 
    /**
@@ -227,7 +239,12 @@ contract FlightSuretyApp {
         uint8 statusCode
     ) external
     {
-        require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
+        bool hasIndex = (
+            (oracles[msg.sender].indexes[0] == index) ||
+            (oracles[msg.sender].indexes[1] == index) ||
+            (oracles[msg.sender].indexes[2] == index)
+        );
+        require(hasIndex, "Index does not match oracle request");
 
 
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
@@ -294,4 +311,15 @@ contract FlightSuretyApp {
 
 // endregion
 
+}
+
+// Contract Stub:
+contract FlightSuretyData {
+    function registerAirline() external view returns(uint256);
+    function getAirlineCount() external view returns(uint256);
+    function buy() external payable;
+    function creditInsurees() external pure;
+    function pay() external pure;
+    function fund() public payable;
+    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32);
 }

@@ -11,12 +11,21 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     address private contractOwner;                                      // Account used to deploy contract
-    bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    bool private operational = true;                                // Blocks all state changes throughout the contract if false
+
+    struct Airline {
+        bytes32 name;
+        bool isRegistered;
+        bool hasPaidFee;
+    }
+
+    // Variable to count all airlines:
+    uint256 private airlineCount;
+    mapping (address => Airline) airlines;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
-
 
     /**
     * @dev Constructor
@@ -92,6 +101,13 @@ contract FlightSuretyData {
     {
     }
 
+   /**
+    * @dev Get the number of airlines verified
+    *
+    */
+    function getAirlineCount() external view returns(uint256) {
+        return airlineCount;
+    }
 
    /**
     * @dev Buy insurance for a flight
