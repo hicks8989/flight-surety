@@ -85,7 +85,7 @@ contract FlightSuretyApp {
         contractOwner = msg.sender;
 
         // Get data from data contract:
-        data = flightSuretyData(dataAddress);
+        data = FlightSuretyData(dataAddress);
     }
 
     /********************************************************************************************/
@@ -106,7 +106,7 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */
-    function registerAirline(address airline, bytes32 airlineName) external pure returns(bool success, uint256 votes)
+    function registerAirline(address _address, bytes32 name) external pure returns(bool success, uint256 votes)
     {
         // Get the total number of airlines:
         uint256 numAirlines = data.getAirlineCount();
@@ -115,9 +115,13 @@ contract FlightSuretyApp {
             // Get votes:
 
         } else {
-            // Do something
-
+            // Register the airline:
+            _registerAirline(_address, name);
         }
+    }
+
+    function _registerAirline(address _address, bytes32 name) internal {
+        data.registerAirline(_address, name);
     }
 
    /**
@@ -144,7 +148,7 @@ contract FlightSuretyApp {
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus(address airline, string flight, uint256 timestamp) external
+    function fetchFlightStatus(address airline, string memory flight, uint256 timestamp) public
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -217,7 +221,7 @@ contract FlightSuretyApp {
         });
     }
 
-    function getMyIndexes() external view returns(uint8[3])
+    function getMyIndexes() external view returns(uint8[3] memory)
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
@@ -234,10 +238,10 @@ contract FlightSuretyApp {
     function submitOracleResponse(
         uint8 index,
         address airline,
-        string flight,
+        string memory flight,
         uint256 timestamp,
         uint8 statusCode
-    ) external
+    ) public
     {
         bool hasIndex = (
             (oracles[msg.sender].indexes[0] == index) ||
@@ -265,13 +269,13 @@ contract FlightSuretyApp {
     }
 
 
-    function getFlightKey(address airline, string flight, uint256 timestamp) internal pure returns(bytes32)
+    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address account) internal returns(uint8[3])
+    function generateIndexes(address account) internal returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
@@ -315,7 +319,7 @@ contract FlightSuretyApp {
 
 // Contract Stub:
 contract FlightSuretyData {
-    function registerAirline() external view returns(uint256);
+    function registerAirline(address airline, bytes32 name) external view returns(uint256);
     function getAirlineCount() external view returns(uint256);
     function buy() external payable;
     function creditInsurees() external pure;

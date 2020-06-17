@@ -31,9 +31,15 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor() public
+    constructor(bytes32 name) public
     {
         contractOwner = msg.sender;
+
+        // Create the first airline:
+        airlines[msg.sender] = Airline(name, true, false);
+
+        // Add to airline count:
+        airlineCount.add(1);
     }
 
     /********************************************************************************************/
@@ -45,7 +51,7 @@ contract FlightSuretyData {
 
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
-    *      This is used on all state changing functions to pause the contract in 
+    *      This is used on all state changing functions to pause the contract in
     *      the event there is an issue that needs to be fixed
     */
     modifier requireIsOperational()
@@ -97,8 +103,13 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline() external pure
+    function registerAirline(address _address, bytes32 name) external pure
     {
+        // Register a new airline with provided information:
+        airlines[_address] = Airline(name, true, false);
+
+        // Increase airline count:
+        airlineCount.add(1);
     }
 
    /**
@@ -107,6 +118,15 @@ contract FlightSuretyData {
     */
     function getAirlineCount() external view returns(uint256) {
         return airlineCount;
+    }
+
+   /**
+    * @dev Get the airline at the provided address
+    *
+    */
+    function getAirline(address _address) external view returns(bytes32, bool, bool) {
+        Airline memory airline = airlines[_address];
+        return (airline.name, airline.isRegistered, airline.hasPaidFee);
     }
 
    /**
@@ -151,7 +171,7 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
-    fallback() external payable
+    function() external payable
     {
         fund();
     }
