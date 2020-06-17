@@ -1,4 +1,5 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.4.25;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -10,23 +11,36 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     address private contractOwner;                                      // Account used to deploy contract
-    bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    bool private operational = true;                                // Blocks all state changes throughout the contract if false
+
+    struct Airline {
+        bytes32 name;
+        bool isRegistered;
+        bool hasPaidFee;
+    }
+
+    // Variable to count all airlines:
+    uint256 private airlineCount;
+    mapping (address => Airline) airlines;
+    mapping (address => uint256) airlineBalances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor
-                                (
-                                ) 
-                                public 
+    constructor(bytes32 name) public
     {
         contractOwner = msg.sender;
+
+        // Create the first airline:
+        airlines[msg.sender] = Airline(name, true, false);
+
+        // Add to airline count:
+        airlineCount.add(1);
     }
 
     /********************************************************************************************/
@@ -38,10 +52,10 @@ contract FlightSuretyData {
 
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
-    *      This is used on all state changing functions to pause the contract in 
+    *      This is used on all state changing functions to pause the contract in
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
+    modifier requireIsOperational()
     {
         require(operational, "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
@@ -64,11 +78,8 @@ contract FlightSuretyData {
     * @dev Get operating status of contract
     *
     * @return A bool that is the current operating status
-    */      
-    function isOperational() 
-                            public 
-                            view 
-                            returns(bool) 
+    */
+    function isOperational() public view returns(bool)
     {
         return operational;
     }
@@ -78,13 +89,8 @@ contract FlightSuretyData {
     * @dev Sets contract operations on/off
     *
     * When operational mode is disabled, all write transactions except for this one will fail
-    */    
-    function setOperatingStatus
-                            (
-                                bool mode
-                            ) 
-                            external
-                            requireContractOwner 
+    */
+    function setOperatingStatus(bool mode) external requireContractOwner
     {
         operational = mode;
     }
@@ -97,25 +103,47 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            pure
+    */
+    function registerAirline(address _address, bytes32 name) external requireIsOperational pure
     {
+        // Register a new airline with provided information:
+        airlines[_address] = Airline(name, true, false);
+
+        // Increase airline count:
+        airlineCount.add(1);
     }
 
+   /**
+    * @dev Get the number of airlines verified
+    *
+    */
+    function getAirlineCount() external view returns(uint256) {
+        return airlineCount;
+    }
+
+   /**
+    * @dev Get the airline at the provided address
+    *
+    */
+    function getAirline(address _address) external view returns(bytes32, bool, bool) {
+        Airline memory airline = airlines[_address];
+        return (airline.name, airline.isRegistered, airline.hasPaidFee);
+    }
+
+   /**
+    * @dev Pay the required airline fee
+    *
+    */
+    function payAirlineFee(address _address, uint256 value) external requireIsOperational {
+        airlineBalances[_address] = value;
+        airlines[_address].hasPaidFee = true;
+    }
 
    /**
     * @dev Buy insurance for a flight
     *
-    */   
-    function buy
-                            (                             
-                            )
-                            external
-                            payable
+    */
+    function buy() external payable
     {
 
     }
@@ -123,24 +151,15 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees
-                                (
-                                )
-                                external
-                                pure
+    function creditInsurees() external pure
     {
     }
-    
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay
-                            (
-                            )
-                            external
-                            pure
+    function pay() external pure
     {
     }
 
@@ -148,24 +167,12 @@ contract FlightSuretyData {
     * @dev Initial funding for the insurance. Unless there are too many delayed flights
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
-    */   
-    function fund
-                            (   
-                            )
-                            public
-                            payable
+    */
+    function fund() public payable
     {
     }
 
-    function getFlightKey
-                        (
-                            address airline,
-                            string memory flight,
-                            uint256 timestamp
-                        )
-                        pure
-                        internal
-                        returns(bytes32) 
+    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
@@ -174,9 +181,7 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
-    function() 
-                            external 
-                            payable 
+    function() external payable
     {
         fund();
     }
