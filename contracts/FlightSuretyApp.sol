@@ -103,12 +103,24 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireFlightNotRegistered(bytes32 flight)
+    {
+        bool isRegistered = true;
+        (isRegistered, , , , ) = data.getFlight(flight);
+        require(!isRegistered, "Flight is already registered");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
 
+    // Airline Events:
     event AirlineRegistered(address indexed _address, uint256 votes);
     event AirlineFeePaid(address indexed _address, uint256 value);
+
+    // Flight Events:
+    event FlightRegistered(bytes32 flight, uint256 timestamp);
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -209,9 +221,12 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */
-    function registerFlight() external pure
+    function registerFlight(bytes32 flight, uint256 timestamp)
+    external requireIsOperational requireAirlineRegistered requireAirlineFeePaid requireFlightNotRegistered(flight)
     {
-
+        // Create a flight in data contract:
+        data.registerFlight(msg.sender, flight, timestamp, STATUS_CODE_UNKNOWN);
+        emit FlightRegistered(flight, timestamp);
     }
 
    /**
@@ -406,6 +421,8 @@ contract FlightSuretyData {
     function getAirlineVotes(address _address) external view returns(address[] memory);
     function getAirline(address _address) external view returns(bytes32, bool, bool);
     function voteForAirline(address _address, address voter) external;
+    function registerFlight(address airline, bytes32 flight, uint256 timestamp, uint8 status) external;
+    function getFlight(bytes32 flight) external view returns(bool, address, bytes32, uint256, uint8);
     function buy() external payable;
     function creditInsurees() external pure;
     function pay() external pure;

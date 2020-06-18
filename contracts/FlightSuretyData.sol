@@ -21,6 +21,7 @@ contract FlightSuretyData {
 
     struct Flight {
         bool isRegistered;
+        bytes32 flight;
         uint8 statusCode;
         uint256 updatedTimestamp;
         address airline;
@@ -34,6 +35,7 @@ contract FlightSuretyData {
 
     // Flight Variables:
     mapping(bytes32 => Flight) private flights;
+    bytes32[] private flightKeys;
 
     // Authorized Contracts:
     mapping (address => bool) authorizedContracts;
@@ -174,11 +176,36 @@ contract FlightSuretyData {
         airlines[_address].hasPaidFee = true;
     }
 
+    function registerFlight(address airline, bytes32 flight, uint256 timestamp, uint8 status)
+    external requireIsOperational requireContractAuthorized
+    {
+        // Generate a flight key with provided information:
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+        flights[flightKey] = Flight(true, flight, status, timestamp, airline);
+
+        // Save the flight key:
+        flightKeys.push(flightKey);
+    }
+
+    function getFlight(bytes32 _flight) external view returns(bool, address, bytes32, uint256, uint8)
+    {
+        // Pass in empty string to flights to get empty flight:
+        Flight memory flight = flights[bytes32(0)];
+        for(uint256 i = 0; i < flightKeys.length; i++) {
+            // Check if the passed in flight matches the flight at the flight key:
+            if (flights[flightKeys[i]].flight == _flight) {
+                flight = flights[flightKeys[i]];
+                break;
+            }
+        }
+        return (flight.isRegistered, flight.airline, flight.flight, flight.updatedTimestamp, flight.statusCode);
+    }
+
    /**
     * @dev Buy insurance for a flight
     *
     */
-    function buy() external payable
+    function buy(address _address, uint256 value) external payable
     {
 
     }
@@ -188,6 +215,7 @@ contract FlightSuretyData {
     */
     function creditInsurees() external pure
     {
+
     }
 
     /**
@@ -207,7 +235,7 @@ contract FlightSuretyData {
     {
     }
 
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32)
+    function getFlightKey(address airline, bytes32 flight, uint256 timestamp) internal pure returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
