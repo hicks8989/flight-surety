@@ -28,21 +28,13 @@ contract FlightSuretyApp {
     // Airline Variables:
     uint256 private constant AIRLINE_FEE = 10 ether;
     uint256 private constant AIRLINE_CONSENSUS = 4;
-    uint256 private constant AIRLINE_CONSENSUS_PERCENTAGE = 50;
+    uint256 private constant AIRLINE_CONSENSUS_FACTOR = 2;
 
     address private contractOwner;          // Account used to deploy contract
 
     // Flight Surety Data Contract:
     FlightSuretyData data;
-    address payable flightSuretyDataAddress;
-
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
+    address flightSuretyDataAddress;
 
 
     /********************************************************************************************/
@@ -73,13 +65,36 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireAirlineRegistered(address _address)
+    modifier requireAirlineRegistered()
     {
         bool isRegistered;
-        ( , isRegistered, ) = data.getAirline(_address);
+        ( , isRegistered, ) = data.getAirline(msg.sender);
         require(isRegistered, "Provided airline is not registered");
         _;
+    }
 
+    modifier requireAirlineFeePaid()
+    {
+        bool hasPaidFee;
+        ( , , hasPaidFee) = data.getAirline(msg.sender);
+        require(hasPaidFee, "Provided airline has not paid fee");
+        _;
+    }
+
+    modifier requireHasNotVoted(address _address)
+    {
+        address[] memory airlineVotes = data.getAirlineVotes(_address);
+        bool hasVoted;
+
+        for (uint i = 0; i < airlineVotes.length; i++) {
+            if (airlineVotes[i] == msg.sender) {
+                hasVoted = true;
+                break;
+            }
+        }
+
+        require(!hasVoted, "Cannot vote for the same airline twice");
+        _;
     }
 
     modifier requireFee(uint256 fee)
@@ -92,8 +107,8 @@ contract FlightSuretyApp {
     /*                                       EVENTS                                             */
     /********************************************************************************************/
 
-    event AirlineRegistered(address _address);
-    event AirlineFeePaid(address _address, uint256 value);
+    event AirlineRegistered(address indexed _address, uint256 votes);
+    event AirlineFeePaid(address indexed _address, uint256 value);
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -103,7 +118,7 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor(address payable dataAddress) public
+    constructor(address dataAddress) public
     {
         contractOwner = msg.sender;
 
@@ -132,33 +147,62 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */
-    function registerAirline(address _address, bytes32 name) external pure returns(bool success, uint256 votes)
+    function registerAirline(address _address, bytes32 name)
+    external requireIsOperational requireAirlineRegistered requireAirlineFeePaid returns(bool success, uint256 votes)
     {
         // Get the total number of airlines:
-        uint256 numAirlines = data.getAirlineCount();
+        uint256 airlineCount = data.getAirlineCount();
         // Check if it is greater than the consensus variable:
-        if(numAirlines > AIRLINE_CONSENSUS) {
-            // Get votes:
+        if(airlineCount > AIRLINE_CONSENSUS) {
+            // Cast vote:
+            voteForAirline(_address);
 
+            // Get total number of votes:
+            uint256 voteCount = data.getAirlineVotes(_address).length;
+
+            // Check if concensus reached:
+            if (_hasEnoughVotes(airlineCount, voteCount)) {
+                _registerAirline(_address, name, voteCount);
+                return (true, voteCount);
+            } else {
+                return (false, voteCount);
+            }
         } else {
             // Register the airline:
-            _registerAirline(_address, name);
+            _registerAirline(_address, name, 1);
+            return (true, 1);
         }
     }
 
-    function _registerAirline(address _address, bytes32 name) internal {
+    function _registerAirline(address _address, bytes32 name, uint256 votes) internal {
         data.registerAirline(_address, name);
-        emit AirlineRegistered(_address);
+        emit AirlineRegistered(_address, votes);
     }
 
-    function payAirlineFee(address _address) external payable requireAirlineRegistered(_address) requireFee(AIRLINE_FEE) {
-        flightSuretyDataAddress.transfer(msg.value);
+    function payAirlineFee(address _address) external payable requireIsOperational requireAirlineRegistered requireFee(AIRLINE_FEE) {
+        address(uint160(address(data))).transfer(msg.value);
         _payAirlineFee(_address, msg.value);
     }
 
     function _payAirlineFee(address _address, uint256 value) internal {
         data.payAirlineFee(_address, msg.value);
         emit AirlineFeePaid(_address, value);
+    }
+
+    function voteForAirline(address _address)
+    internal requireIsOperational requireAirlineRegistered requireAirlineFeePaid requireHasNotVoted(_address) {
+        data.voteForAirline(_address, msg.sender);
+    }
+
+    function _hasEnoughVotes(uint256 airlineCount, uint256 voteCount) internal pure returns(bool) {
+        // Get the number of required votes:
+        uint256 neededVotes = airlineCount.div(AIRLINE_CONSENSUS_FACTOR);
+
+        if ((airlineCount % 2) == 1) {
+            neededVotes.add(1);
+        }
+
+        return (voteCount >= neededVotes);
     }
 
    /**
@@ -356,13 +400,15 @@ contract FlightSuretyApp {
 
 // Contract Stub:
 contract FlightSuretyData {
-    function registerAirline(address airline, bytes32 name) external view returns(uint256);
-    function payAirlineFee(address airline, uint256 value) external;
+    function registerAirline(address _address, bytes32 name) external view returns(uint256);
+    function payAirlineFee(address _address, uint256 value) external;
     function getAirlineCount() external view returns(uint256);
-    function getAirline(address) external view returns(bytes32, bool, bool);
+    function getAirlineVotes(address _address) external view returns(address[] memory);
+    function getAirline(address _address) external view returns(bytes32, bool, bool);
+    function voteForAirline(address _address, address voter) external;
     function buy() external payable;
     function creditInsurees() external pure;
     function pay() external pure;
     function fund() public payable;
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32);
+    function getFlightKey(address _address, string memory flight, uint256 timestamp) internal pure returns(bytes32);
 }

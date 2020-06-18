@@ -19,10 +19,21 @@ contract FlightSuretyData {
         bool hasPaidFee;
     }
 
-    // Variable to count all airlines:
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+    }
+
+    // Airline Variables:
     uint256 private airlineCount;
     mapping (address => Airline) airlines;
     mapping (address => uint256) airlineBalances;
+    mapping (address => address[]) airlineVotes;
+
+    // Flight Variables:
+    mapping(bytes32 => Flight) private flights;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -104,7 +115,7 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline(address _address, bytes32 name) external requireIsOperational pure
+    function registerAirline(address _address, bytes32 name) external requireIsOperational
     {
         // Register a new airline with provided information:
         airlines[_address] = Airline(name, true, false);
@@ -119,6 +130,14 @@ contract FlightSuretyData {
     */
     function getAirlineCount() external view returns(uint256) {
         return airlineCount;
+    }
+
+    function voteForAirline(address _address, address voter) external requireIsOperational {
+        airlineVotes[_address].push(voter);
+    }
+
+    function getAirlineVotes(address _address) external view returns(address[] memory) {
+        return airlineVotes[_address];
     }
 
    /**
