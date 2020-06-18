@@ -35,6 +35,9 @@ contract FlightSuretyData {
     // Flight Variables:
     mapping(bytes32 => Flight) private flights;
 
+    // Authorized Contracts:
+    mapping (address => bool) authorizedContracts;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -81,6 +84,12 @@ contract FlightSuretyData {
         _;
     }
 
+    modifier requireContractAuthorized()
+    {
+        require(authorizedContracts[msg.sender], "Contract is unautorized");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -106,6 +115,11 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function authorizeContract(address _address) external requireIsOperational requireContractOwner
+    {
+        authorizedContracts[_address] = true;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -115,7 +129,7 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline(address _address, bytes32 name) external requireIsOperational
+    function registerAirline(address _address, bytes32 name) external requireIsOperational requireContractAuthorized
     {
         // Register a new airline with provided information:
         airlines[_address] = Airline(name, true, false);
@@ -132,7 +146,8 @@ contract FlightSuretyData {
         return airlineCount;
     }
 
-    function voteForAirline(address _address, address voter) external requireIsOperational {
+    function voteForAirline(address _address, address voter) external requireIsOperational requireContractAuthorized
+    {
         airlineVotes[_address].push(voter);
     }
 
@@ -153,7 +168,8 @@ contract FlightSuretyData {
     * @dev Pay the required airline fee
     *
     */
-    function payAirlineFee(address _address, uint256 value) external requireIsOperational {
+    function payAirlineFee(address _address, uint256 value) external requireIsOperational requireContractAuthorized
+    {
         airlineBalances[_address] = value;
         airlines[_address].hasPaidFee = true;
     }
