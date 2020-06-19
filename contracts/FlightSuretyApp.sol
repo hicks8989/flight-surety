@@ -69,7 +69,15 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireAirlineRegistered()
+    modifier requireAirlineNotRegistered(address _address)
+    {
+        bool isRegistered;
+        ( , isRegistered, ) = data.getAirline(msg.sender);
+        require(isRegistered, "Provided airline is already registered");
+        _;
+    }
+
+    modifier requireAirlineRegistered(address _address)
     {
         bool isRegistered;
         ( , isRegistered, ) = data.getAirline(msg.sender);
@@ -188,14 +196,19 @@ contract FlightSuretyApp {
     *
     */
     function registerAirline(address _address, bytes32 name)
-    external requireIsOperational requireAirlineRegistered requireAirlineFeePaid returns(bool success, uint256 votes)
+        external
+        requireIsOperational
+        requireAirlineNotRegistered(_address)
+        requireAirlineRegistered(msg.sender)
+        requireAirlineFeePaid
+        returns(bool success, uint256 votes)
     {
         // Get the total number of airlines:
         uint256 airlineCount = data.getAirlineCount();
         // Check if it is greater than the consensus variable:
         if(airlineCount > AIRLINE_CONSENSUS) {
             // Cast vote:
-            voteForAirline(_address);
+            _voteForAirline(_address);
 
             // Get total number of votes:
             uint256 voteCount = data.getAirlineVotes(_address).length;
@@ -214,27 +227,46 @@ contract FlightSuretyApp {
         }
     }
 
-    function _registerAirline(address _address, bytes32 name, uint256 votes) internal {
+    function _registerAirline(address _address, bytes32 name, uint256 votes)
+        internal
+    {
         data.registerAirline(_address, name);
         emit AirlineRegistered(_address, votes);
     }
 
-    function payAirlineFee(address _address) external payable requireIsOperational requireAirlineRegistered requireFee(AIRLINE_FEE) {
+    function payAirlineFee()
+        external
+        payable
+        requireIsOperational
+        requireAirlineRegistered(msg.sender)
+        requireFee(AIRLINE_FEE)
+    {
         address(uint160(address(data))).transfer(msg.value);
-        _payAirlineFee(_address, msg.value);
+        _payAirlineFee(msg.sender, msg.value);
     }
 
-    function _payAirlineFee(address _address, uint256 value) internal {
+    function _payAirlineFee(address _address, uint256 value)
+        internal
+    {
         data.payAirlineFee(_address, msg.value);
         emit AirlineFeePaid(_address, value);
     }
 
-    function voteForAirline(address _address)
-    internal requireIsOperational requireAirlineRegistered requireAirlineFeePaid requireHasNotVoted(_address) {
+    function _voteForAirline(address _address)
+        internal
+        requireIsOperational
+        requireAirlineRegistered(msg.sender)
+        requireAirlineFeePaid
+        requireHasNotVoted(_address)
+    {
         data.voteForAirline(_address, msg.sender);
     }
 
-    function _hasEnoughVotes(uint256 airlineCount, uint256 voteCount) internal pure returns(bool) {
+    function _hasEnoughVotes(uint256 airlineCount, uint256 voteCount)
+        internal
+        pure
+        returns(bool)
+    {
         // Get the number of required votes:
         uint256 neededVotes = airlineCount.mul(AIRLINE_CONSENSUS_FACTOR).div(100);
 
@@ -250,19 +282,27 @@ contract FlightSuretyApp {
     *
     */
     function registerFlight(bytes32 flight, uint256 timestamp)
-    external requireIsOperational requireAirlineRegistered requireAirlineFeePaid requireFlightNotRegistered(flight)
+        external
+        requireIsOperational
+        requireAirlineRegistered(msg.sender)
+        requireAirlineFeePaid
+        requireFlightNotRegistered(flight)
     {
         // Create a flight in data contract:
         data.registerFlight(msg.sender, flight, timestamp, STATUS_CODE_UNKNOWN);
         emit FlightRegistered(flight, timestamp);
     }
 
-    function getFlight(bytes32 flight) external returns(bool, address, bytes32, uint256, uint8)
+    function getFlight(bytes32 flight)
+        external
+        returns(bool, address, bytes32, uint256, uint8)
     {
         return data.getFlight(flight);
     }
 
-    function getAllFlights() external returns(bytes32[] memory)
+    function getAllFlights()
+        external
+        returns(bytes32[] memory)
     {
         return data.getAllFlights();
     }
@@ -271,18 +311,22 @@ contract FlightSuretyApp {
     * @dev Called after oracle has updated flight status
     *
     */
-    function processFlightStatus
-    (address airline,
-    string memory flight,
-    uint256 timestamp,
-    uint8 statusCode) internal pure
+    function processFlightStatus(address airline, bytes32 flight, uint256 timestamp, uint8 statusCode)
+        internal
+        pure
     {
-
+        // Update flight status:
+        data.updateFlightStatus(flight, statusCode);
+        // Check to see if the flight is late:
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            data.creditInsurees(flight, PAYOUT_FACTOR);
+        }
     }
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus(address airline, string memory flight, uint256 timestamp) public
+    function fetchFlightStatus(address airline, string memory flight, uint256 timestamp)
+        public
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -351,9 +395,9 @@ contract FlightSuretyApp {
     mapping(bytes32 => ResponseInfo) private oracleResponses;
 
     // Event fired each time an oracle submits a response
-    event FlightStatusInfo(address airline, string flight, uint256 timestamp, uint8 status);
+    event FlightStatusInfo(address airline, bytes32 flight, uint256 timestamp, uint8 status);
 
-    event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
+    event OracleReport(address airline, bytes32 flight, uint256 timestamp, uint8 status);
 
     // Event fired when flight status request is submitted
     // Oracles track this and if they have a matching index
@@ -362,7 +406,9 @@ contract FlightSuretyApp {
 
 
     // Register an oracle with the contract
-    function registerOracle() external payable
+    function registerOracle()
+        external
+        payable
     {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
@@ -375,7 +421,10 @@ contract FlightSuretyApp {
         });
     }
 
-    function getMyIndexes() external view returns(uint8[3] memory)
+    function getMyIndexes()
+        external
+        view
+        returns(uint8[3] memory)
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
@@ -392,7 +441,7 @@ contract FlightSuretyApp {
     function submitOracleResponse(
         uint8 index,
         address airline,
-        string memory flight,
+        bytes32 flight,
         uint256 timestamp,
         uint8 statusCode
     ) public
@@ -423,13 +472,18 @@ contract FlightSuretyApp {
     }
 
 
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32)
+    function getFlightKey(address airline, string memory flight, uint256 timestamp)
+        internal
+        pure
+        returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address account) internal returns(uint8[3] memory)
+    function generateIndexes(address account)
+        internal
+        returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
@@ -448,7 +502,9 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function getRandomIndex(address account) internal returns (uint8)
+    function getRandomIndex(address account)
+        internal
+        returns(uint8)
     {
         uint8 maxValue = 10;
 
@@ -480,6 +536,7 @@ contract FlightSuretyData {
     function registerFlight(address airline, bytes32 flight, uint256 timestamp, uint8 status) external;
     function getFlight(bytes32 flight) external view returns(bool, address, bytes32, uint256, uint8);
     function getAllFlights() external view returns(bytes32[] memory);
+    function updateFlightStatus(bytes32 flight, uint8 statusCode) external;
     function buy(address _address, uint256 value, bytes32 flight) external payable;
     function creditInsurees(bytes32 flight, uint256 payoutFactor) external pure;
     function pay(address _address, uint256 value) external pure;
