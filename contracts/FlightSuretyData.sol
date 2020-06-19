@@ -276,25 +276,10 @@ contract FlightSuretyData {
         return flightNames;
     }
 
-    function updateFlightStatus(bytes32 flight, uint8 statusCode)
+    function updateFlightStatus(bytes32 flightKey, uint8 statusCode)
         external
         requireIsOperational
         requireContractAuthorized
-    {
-        // Get the address and timestamp of flight:
-        address airline;
-        uint256 timestamp;
-        ( , airline, , timestamp, ) = _getFlight(flight);
-
-        // Get the flight key:
-        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-
-        // Update the flights status:
-        _updateFlightStatus(flightKey, statusCode);
-    }
-
-    function _updateFlightStatus(bytes32 flightKey, uint8 statusCode)
-        internal
     {
         flights[flightKey].statusCode = statusCode;
     }
@@ -386,14 +371,14 @@ contract FlightSuretyData {
         return airlineBalances[_address];
     }
 
-    function pay(address payable _address, uint256 value)
+    function pay(address _address, uint256 value)
         external
         requireIsOperational
         requireContractAuthorized
         requireContractHasFunds(value)
     {
         insuranceBalances[_address] = insuranceBalances[_address].sub(value);
-        _address.transfer(value);
+        address(uint160(address(_address))).transfer(value);
     }
 
     function getFlightKey(address airline, bytes32 flight, uint256 timestamp)

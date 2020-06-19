@@ -295,6 +295,7 @@ contract FlightSuretyApp {
 
     function getFlight(bytes32 flight)
         external
+        view
         returns(bool, address, bytes32, uint256, uint8)
     {
         return data.getFlight(flight);
@@ -302,6 +303,7 @@ contract FlightSuretyApp {
 
     function getAllFlights()
         external
+        view
         returns(bytes32[] memory)
     {
         return data.getAllFlights();
@@ -313,10 +315,11 @@ contract FlightSuretyApp {
     */
     function processFlightStatus(address airline, bytes32 flight, uint256 timestamp, uint8 statusCode)
         internal
-        pure
     {
+        // Get flight key:
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
         // Update flight status:
-        data.updateFlightStatus(flight, statusCode);
+        data.updateFlightStatus(flightKey, statusCode);
         // Check to see if the flight is late:
         if (statusCode == STATUS_CODE_LATE_AIRLINE) {
             data.creditInsurees(flight, PAYOUT_FACTOR);
@@ -356,6 +359,7 @@ contract FlightSuretyApp {
         external
         requireIsOperational
         requireCreditFunds(value)
+        view
     {
         data.pay(msg.sender, value);
     }
@@ -472,7 +476,7 @@ contract FlightSuretyApp {
     }
 
 
-    function getFlightKey(address airline, string memory flight, uint256 timestamp)
+    function getFlightKey(address airline, bytes32 flight, uint256 timestamp)
         internal
         pure
         returns(bytes32)
@@ -536,9 +540,9 @@ contract FlightSuretyData {
     function registerFlight(address airline, bytes32 flight, uint256 timestamp, uint8 status) external;
     function getFlight(bytes32 flight) external view returns(bool, address, bytes32, uint256, uint8);
     function getAllFlights() external view returns(bytes32[] memory);
-    function updateFlightStatus(bytes32 flight, uint8 statusCode) external;
+    function updateFlightStatus(bytes32 flightKey, uint8 statusCode) external;
     function buy(address _address, uint256 value, bytes32 flight) external payable;
-    function creditInsurees(bytes32 flight, uint256 payoutFactor) external pure;
+    function creditInsurees(bytes32 flight, uint256 payoutFactor) external;
     function pay(address _address, uint256 value) external pure;
     function fund() public payable;
     function getFlightKey(address _address, string memory flight, uint256 timestamp) internal pure returns(bytes32);
