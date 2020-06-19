@@ -276,6 +276,29 @@ contract FlightSuretyData {
         return flightNames;
     }
 
+    function updateFlightStatus(bytes32 flight, uint8 statusCode)
+        external
+        requireIsOperational
+        requireContractAuthorized
+    {
+        // Get the address and timestamp of flight:
+        address airline;
+        uint256 timestamp;
+        ( , airline, , timestamp, ) = _getFlight(flight);
+
+        // Get the flight key:
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+
+        // Update the flights status:
+        _updateFlightStatus(flightKey, statusCode);
+    }
+
+    function _updateFlightStatus(bytes32 flightKey, uint8 statusCode)
+        internal
+    {
+        flights[flightKey].statusCode = statusCode;
+    }
+
    /**
     * @dev Buy insurance for a flight
     *
