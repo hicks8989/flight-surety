@@ -147,6 +147,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireStatusCodeChange(bytes32 flight, uint8 statusCode)
+    {
+        uint8 currentStatus;
+        ( , , , , currentStatus) = data.getFlight(flight);
+        require(statusCode != currentStatus, "Flight status code has not been updated");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
@@ -315,6 +323,7 @@ contract FlightSuretyApp {
     */
     function processFlightStatus(address airline, bytes32 flight, uint256 timestamp, uint8 statusCode)
         internal
+        requireStatusCodeChange(flight, statusCode)
     {
         // Get flight key:
         bytes32 flightKey = getFlightKey(airline, flight, timestamp);
