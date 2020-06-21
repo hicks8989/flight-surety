@@ -38,15 +38,6 @@ const payAirlineFee = async (sender, value) => {
   }
 }
 
-const getAllAirlines = async () => {
-  try {
-    const airlines = await flightSuretyApp.methods.getAllAirlines();
-    return airlines;
-  } catch(e) {
-    console.log(e);
-  }
-}
-
 const getAirline = async (address) => {
   try {
     const airline = await flightSuretyApp.methods.getAirline(address);
@@ -60,5 +51,4 @@ export {
   registerAirline,
   payAirlineFee,
   getAirline,
-  getAllAirlines
 }
