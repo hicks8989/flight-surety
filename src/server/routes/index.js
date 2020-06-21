@@ -9,6 +9,7 @@ const router = express.Router();
 // Import Routers:
 import { router as oracleRouter } from "./oracle";
 import { router as airlineRouter } from "./airline";
+import { router as flightRouter } from "./flight";
 
 router.get("/", (req, res) => {
   res.status(200).send({
@@ -18,6 +19,7 @@ router.get("/", (req, res) => {
 
 router.use("/oracle", oracleRouter);
 router.use("/airline", airlineRouter);
+router.use("/flight", flightRouter);
 
 export {
   router

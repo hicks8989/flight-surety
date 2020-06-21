@@ -155,6 +155,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireStatusUnknown(bytes32 flight)
+    {
+        uint8 statusCode;
+        ( , , , , statusCode) = data.getFlight(flight);
+        require(statusCode == STATUS_CODE_UNKNOWN, "Flight status code must be unknown");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
@@ -365,6 +373,7 @@ contract FlightSuretyApp {
         requireIsOperational
         requireLessThanMaxInsurance(flight, MAX_INSURANCE)
         requireFlightRegistered(flight)
+        requireStatusUnknown(flight)
     {
         // Transfer insurance:
         address(uint160(address(data))).transfer(msg.value);
