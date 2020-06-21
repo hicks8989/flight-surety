@@ -27,9 +27,9 @@ router.route("/")
   }
 );
 
-router.get("/index", async (req, res, next) => {
+router.get("/indexes/:address", async (req, res, next) => {
   try {
-    const indexes = await getMyIndexes(req.body.address);
+    const indexes = await getMyIndexes(req.params.address);
     res.status(200).json({
       message: "Successfully fetched indexes",
       indexes

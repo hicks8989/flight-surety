@@ -2,21 +2,9 @@
 // Controller for Oracles:
 // =========================================
 
-// Import dependencies:
-import FlightSuretyApp from '../../../build/contracts/FlightSuretyApp.json';
-import Config from './config.json';
-import Web3 from 'web3';
-
-// Configure variables:
-let config = Config['localhost'];
-let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
-web3.eth.defaultAccount = web3.eth.accounts[0];
-let appAddress = config.appAddress;
-let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, appAddress);
+import { flightSuretyApp, web3 } from "../instance";
 let accounts = [];
 let oracles = {};
-
-// Create controllers:
 
 // Function to get accounts:
 const getAccounts = async () => {

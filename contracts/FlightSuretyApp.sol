@@ -285,6 +285,13 @@ contract FlightSuretyApp {
         return (voteCount >= neededVotes);
     }
 
+    function getAirline(address _address)
+        external
+        returns(bytes32, bool, bool)
+    {
+        return data.getAirline(_address);
+    }
+
    /**
     * @dev Register a future flight for insuring.
     *
