@@ -7,19 +7,26 @@ contract('Flight Surety Tests', async (accounts) => {
 
   var config;
   const airlines = [
-      "Oceanic Airlines",
-      "American Airlines",
-      "JetBlue",
-      "Southwest Airlines",
-      "Delta Airlines"
+    "Oceanic Airlines",
+    "American Airlines",
+    "JetBlue",
+    "Southwest Airlines",
+    "Delta Airlines"
   ].map( airline => ethers.utils.formatBytes32String(airline));
   const AIRLINE_FEE = web3.utils.toWei("10", "ether");
   const flights = [
-      "815",
-      "337",
-      "2490",
-      "2491"
+    "815",
+    "337",
+    "2490",
+    "2491"
   ].map( flight => ethers.utils.formatBytes32String(flight));
+  const times = [
+    "03/01/2020 12:48:38 PM",
+    "05/16/2020 01:01:49 AM",
+    "01/26/2020 04:21:39 AM",
+    "01/13/2020 11:06:16 PM",
+    "06/14/2020 07:32:58 PM"
+  ].map( time => Number(new Date(time)));
 
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -40,41 +47,41 @@ contract('Flight Surety Tests', async (accounts) => {
 
   it(`(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async function () {
 
-      // Ensure that access is denied for non-Contract Owner account
-      let accessDenied = false;
-      try
-      {
-          await config.flightSuretyData.setOperatingStatus(false, { from: config.testAddresses[2] });
-      }
-      catch(e) {
-          accessDenied = true;
-      }
-      assert.equal(accessDenied, true, "Access not restricted to Contract Owner");
+    // Ensure that access is denied for non-Contract Owner account
+    let accessDenied = false;
+    try
+    {
+      await config.flightSuretyData.setOperatingStatus(false, { from: config.testAddresses[2] });
+    }
+    catch(e) {
+      accessDenied = true;
+    }
+    assert.equal(accessDenied, true, "Access not restricted to Contract Owner");
   });
 
   it(`(multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async function () {
 
       // Ensure that access is allowed for Contract Owner account
-      let accessDenied = false;
-      try
-      {
-          await config.flightSuretyData.setOperatingStatus(false, {from: config.firstAirline});
-      }
-      catch(e) {
-          accessDenied = true;
-      }
-      assert.equal(accessDenied, false, "Access not restricted to Contract Owner");
+    let accessDenied = false;
+    try
+    {
+      await config.flightSuretyData.setOperatingStatus(false, {from: config.firstAirline});
+    }
+    catch(e) {
+      accessDenied = true;
+    }
+    assert.equal(accessDenied, false, "Access not restricted to Contract Owner");
   });
 
   it('(airline) can fund an airline', async () => {
 
     // ACT
     try {
-        await config.flightSuretyData.setOperatingStatus(true, {from: config.firstAirline});
-        await config.flightSuretyApp.payAirlineFee({
-            from: config.firstAirline,
-            value: AIRLINE_FEE
-        });
+      await config.flightSuretyData.setOperatingStatus(true, {from: config.firstAirline});
+      await config.flightSuretyApp.payAirlineFee({
+        from: config.firstAirline,
+        value: AIRLINE_FEE
+      });
     }
     catch(e) {
 
@@ -161,5 +168,54 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result[2], accounts[3], "Invalid registered airline: 3");
     assert.equal(result[3], accounts[4], "Invalid registered airline: 4");
     assert.equal(result[4], accounts[5], "Invalid registered airline: 5");
+  });
+
+  it("(flight) can register a flight", async () => {
+    let eventEmitted = false;
+
+    try {
+      await config.flightSuretyApp.FlightRegistered((err, res) => {
+        eventEmitted = true;
+      });
+      await config.flightSuretyApp.registerFlight(flights[0], times[0], {
+        from: config.firstAirline
+      });
+    } catch(e) {
+      console.log(e);
+    }
+
+    const result = await config.flightSuretyApp.getFlight.call(flights[0]);
+
+    assert(result[0], "Funded airline should be able to register flight");
+    assert(eventEmitted, "Invalid event emitted");
+  });
+
+  it("(flight) can get a flight by its name", async () => {
+    const result = await config.flightSuretyApp.getFlight.call(flights[0]);
+
+    assert(result[0], "Invalid flight registration");
+    assert.equal(result[1], config.firstAirline, "Invalid airline address");
+    assert.equal(result[2], flights[0], "Invalid flight name");
+    assert(new BigNumber(result[3]).isEqualTo(times[0]), "Invalid timestamp");
+    assert(new BigNumber(result[4]).isEqualTo(0), "Invalid status code");
+  });
+
+  it("(flight) can get all registered flights", async () => {
+    try {
+      await config.flightSuretyApp.registerFlight(flights[1], times[1], {
+        from: config.firstAirline
+      });
+      await config.flightSuretyApp.registerFlight(flights[2], times[1], {
+        from: config.firstAirline
+      })
+    } catch(e) {
+
+    }
+
+    const result = await config.flightSuretyApp.getAllFlights.call();
+
+    assert.equal(result[0], flights[0], "Invalid flight: 1");
+    assert.equal(result[1], flights[1], "Invalid flight: 2");
+    assert.equal(result[2], flights[2], "Invalid flight: 3");
   });
 });
