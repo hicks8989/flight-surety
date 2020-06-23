@@ -34,10 +34,9 @@ contract FlightSuretyData {
     }
 
     // Airline Variables:
-    uint256 private airlineCount;
+    address[] registeredAirlines;
     mapping (address => Airline) airlines;
     mapping (address => uint256) airlineBalances;
-    mapping (address => address[]) airlineVotes;
 
     // Flight Variables:
     mapping(bytes32 => Flight) private flights;
@@ -67,7 +66,7 @@ contract FlightSuretyData {
         airlines[msg.sender] = Airline(name, true, false);
 
         // Add to airline count:
-        airlineCount.add(1);
+        registeredAirlines.push(msg.sender);
     }
 
     /********************************************************************************************/
@@ -164,8 +163,7 @@ contract FlightSuretyData {
         // Register a new airline with provided information:
         airlines[_address] = Airline(name, true, false);
 
-        // Increase airline count:
-        airlineCount.add(1);
+        registeredAirlines.push(_address);
     }
 
    /**
@@ -175,25 +173,17 @@ contract FlightSuretyData {
     function getAirlineCount()
         external
         view
-        returns(uint256)
+        returns(uint)
     {
-        return airlineCount;
+        return registeredAirlines.length;
     }
 
-    function voteForAirline(address _address, address voter)
-        external
-        requireIsOperational
-        requireContractAuthorized
-    {
-        airlineVotes[_address].push(voter);
-    }
-
-    function getAirlineVotes(address _address)
+    function getRegisteredAirlines()
         external
         view
         returns(address[] memory)
     {
-        return airlineVotes[_address];
+        return registeredAirlines;
     }
 
    /**
@@ -218,7 +208,7 @@ contract FlightSuretyData {
         requireIsOperational
         requireContractAuthorized
     {
-        airlineBalances[_address] = value;
+        airlineBalances[_address] = airlineBalances[_address].add(value);
         airlines[_address].hasPaidFee = true;
     }
 
@@ -378,7 +368,6 @@ contract FlightSuretyData {
         requireContractHasFunds(value)
     {
         insuranceBalances[_address] = insuranceBalances[_address].sub(value);
-        address(uint160(address(_address))).transfer(value);
     }
 
     function getFlightKey(address airline, bytes32 flight, uint256 timestamp)
