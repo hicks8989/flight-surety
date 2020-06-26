@@ -14,7 +14,7 @@ export default class Contract {
         this.airlines = [];
         this.flights = [];
         this.flight = null;
-
+        this.balance = null;
         this.passengers = [];
     }
 

@@ -165,6 +165,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireInsuranceFee()
+    {
+        require(msg.value > 0, "Insurance must be greater than 0");
+    }
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
@@ -385,6 +390,7 @@ contract FlightSuretyApp {
         external
         payable
         requireIsOperational
+        requireInsuranceFee
         requireLessThanMaxInsurance(flight, MAX_INSURANCE)
         requireFlightRegistered(flight)
         requireStatusUnknown(flight)
