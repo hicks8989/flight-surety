@@ -1,6 +1,7 @@
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
 import Config from './config.json';
 import Web3 from 'web3';
+import { ethers } from 'ethers';
 
 export default class Contract {
     constructor(network, callback) {
@@ -12,18 +13,23 @@ export default class Contract {
         this.owner = null;
         this.airlines = [];
         this.flights = [];
+        this.flight = null;
+
         this.passengers = [];
     }
 
     initialize(callback) {
-        this.web3.eth.getAccounts((error, accts) => {
+        this.web3.eth.getAccounts(async (error, accts) => {
 
             this.owner = accts[0];
 
             let counter = 1;
 
-            while(this.airlines.length < 5) {
-                this.airlines.push(accts[counter++]);
+            this.airlines = await this.flightSuretyApp.methods.getRegisteredAirlines.call();
+            this.flights = await this.flightSuretyApp.methods.getAllFlights.call();
+
+            if (this.flights.length > 0) {
+                this.flight = this.flights[0];
             }
 
             while(this.passengers.length < 5) {
@@ -36,6 +42,7 @@ export default class Contract {
 
     async registerAirline(airline, name, callback) {
         let self = this;
+        name = ethers.utils.formatBytes32String(name);
         await self.flightSuretyApp.methods.registerAirline(airline, name).send({
             from: self.owner
         }, callback);
@@ -47,6 +54,48 @@ export default class Contract {
             from: self.owner,
             value: self.web3.utils.toWei(value, "ether")
         }, callback);
+    }
+
+    async getPassengerBalance(callback) {
+        let self = this;
+
+        self.balance = await self.flightSuretyApp.methods.getPassengerBalance().send({
+            from: self.owner
+        }, callback);
+    }
+
+    async buy(flight, value, callback) {
+        let self = this;
+
+        await self.flightSuretyApp.methods.buy(flight).send({
+            from: self.owner,
+            value: self.web3.utils.toWei(value, "ether")
+        }, callback);
+    }
+
+    async withdraw(value, callback) {
+        let self = this;
+
+        await self.flightSuretyApp.methods.withdraw().send({
+            from: self.owner,
+            value: self.web3.utils.toWei(value, "ether")
+        }, callback);
+    }
+
+    async registerFlight(flight, timestamp, callback) {
+        flight = ethers.utils.formatBytes32String(flight);
+        timestamp = Number(new Date(timestamp));
+
+        await self.flightSuretyApp.methods.registerAirline(flight, timestamp).send({
+            from: self.owner
+        }, callback);
+    }
+
+    async getFlight(flight, callback) {
+        let self = this;
+        flight = ethers.utils.formatBytes32String(flight);
+
+        self.flight = await self.flightSuretyApp.methods.getFlight(flight, callback);
     }
 
     isOperational(callback) {
