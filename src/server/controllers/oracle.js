@@ -2,6 +2,9 @@
 // Controller for Oracles:
 // =========================================
 
+require("babel-core/register");
+require("babel-polyfill");
+
 import { flightSuretyApp, web3 } from "../instance";
 let accounts = [];
 let oracles = {};

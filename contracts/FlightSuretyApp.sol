@@ -165,6 +165,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireInsuranceFee()
+    {
+        require(msg.value > 0, "Insurance must be greater than 0");
+    }
+
     /********************************************************************************************/
     /*                                       EVENTS                                             */
     /********************************************************************************************/
@@ -306,6 +311,14 @@ contract FlightSuretyApp {
         return data.getAirline(_address);
     }
 
+    function getRegisteredAirlines()
+        external
+        view
+        returns(address[] memory)
+    {
+        return data.getRegisteredAirlines();
+    }
+
    /**
     * @dev Register a future flight for insuring.
     *
@@ -377,6 +390,7 @@ contract FlightSuretyApp {
         external
         payable
         requireIsOperational
+        requireInsuranceFee
         requireLessThanMaxInsurance(flight, MAX_INSURANCE)
         requireFlightRegistered(flight)
         requireStatusUnknown(flight)
@@ -393,6 +407,14 @@ contract FlightSuretyApp {
     {
         msg.sender.transfer(value);
         data.pay(msg.sender, value);
+    }
+
+    function getPassengerBalance()
+        external
+        view
+        returns(uint256)
+    {
+        return data.getInsuranceBalance(msg.sender);
     }
 
 

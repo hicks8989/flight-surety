@@ -4,27 +4,10 @@
 
 // Import dependencies:
 import express from "express";
-import { registerAirline, payAirlineFee, getAllAirlines, getAirline } from "../controllers/airline";
+import { registerAirline, payAirlineFee, getAirline } from "../controllers/airline";
 
 // Create router:
 const router = express.Router();
-
-// Create routes:
-router.get("/airlines", async (req, res, next) => {
-  try {
-    const airlines = await getAllAirlines();
-    res.status(200).json({
-      message: "Successfully fetched airlines",
-      airlines
-    });
-  } catch(e) {
-    console.log(e);
-    res.status(500).json({
-      message: "Error(s) getting airlines",
-      err: e
-    });
-  }
-});
 
 router.get("/airlines/:airline", async (req, res, next) => {
   try {

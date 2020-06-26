@@ -3,6 +3,8 @@ import express from 'express';
 import { router } from './routes';
 import { registerOracles } from './controllers/oracle';
 import { flightSuretyData, web3 } from './instance';
+require("babel-core/register");
+require("babel-polyfill");
 
 let config = Config['localhost'];
 

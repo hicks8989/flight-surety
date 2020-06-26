@@ -15,7 +15,6 @@ import './flightsurety.css';
             console.log(error,result);
             display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
         });
-    
 
         // User-submitted transaction
         DOM.elid('submit-oracle').addEventListener('click', () => {
@@ -24,10 +23,61 @@ import './flightsurety.css';
             contract.fetchFlightStatus(flight, (error, result) => {
                 display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
             });
+        });
+
+        DOM.elid('register-airline').addEventListener('click', () => {
+            let airline = DOM.elid('airline-address').value;
+            let name = DOM.elid('airline-name').value;
+            // Write transaction
+            contract.registerAirline(airline, name, (err, res) => {
+                alert("Airline was successfully registered");
+            });
+        });
+
+        DOM.elid('pay-airline').addEventListener('click', () => {
+            let airline = DOM.elid("airline-fund-address").value;
+            let value = DOM.elid("airline-value").value;
+            // Write transaction
+            contract.payAirline(airline, value, (err, res) => {
+                alert("Successfully paid airline fee");
+            });
+        });
+
+        DOM.elid('register-flight').addEventListener('click', () => {
+            let flight = DOM.elid("flight").value;
+            let timestamp = DOM.elid("flight-timestamp").value;
+            // Write transaction
+            contract.registerFlight(flight, timestamp, (err, res) => {
+                alert("Successfully registered flight");
+            });
         })
-    
+
+        DOM.elid('buy').addEventListener('click', () => {
+            let flight = DOM.elid("flight-name").value;
+            let value = DOM.elid("insurance-value").value;
+            // Write transaction
+            contract.buy(flight, value, (err, res) => {
+                alert("Successfully bought insurance");
+            });
+        });
+
+        DOM.elid('withdraw').addEventListener('click', () => {
+            let value = DOM.elid("withdraw-value").value;
+            // Write transaction
+            contract.withdraw(value, (err, res) => {
+                alert("Successfully withdrew funds");
+            });
+        });
+
+        DOM.elid('get-passenger-balance').addEventListener('click', () => {
+            // Write transaction
+            contract.getPassengerBalance((err, res) => {
+                console.log("Successfully got passenger balance");
+            });
+
+            alert(contract.balance);
+        });
     });
-    
 
 })();
 
@@ -44,7 +94,6 @@ function display(title, description, results) {
         section.appendChild(row);
     })
     displayDiv.append(section);
-
 }
 
 
