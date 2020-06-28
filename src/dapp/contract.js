@@ -13,7 +13,6 @@ export default class Contract {
         this.owner = null;
         this.airlines = [];
         this.flights = [];
-        this.flight = null;
         this.balance = null;
         this.passengers = [];
     }
@@ -27,10 +26,6 @@ export default class Contract {
 
             this.airlines = await this.flightSuretyApp.methods.getRegisteredAirlines.call();
             this.flights = await this.flightSuretyApp.methods.getAllFlights.call();
-
-            if (this.flights.length > 0) {
-                this.flight = this.flights[0];
-            }
 
             while(this.passengers.length < 5) {
                 this.passengers.push(accts[counter++]);
@@ -48,11 +43,12 @@ export default class Contract {
         }, callback);
     }
 
-    async payAirline(airline, value, callback) {
+    async payAirline(value, callback) {
         let self = this;
-        await self.flightSuretyApp.methods.payAirline(airline).send({
+        const walletValue = self.web3.toWei(value, "ether");
+        await self.flightSuretyApp.methods.payAirlineFee().send({
             from: self.owner,
-            value: self.web3.utils.toWei(value, "ether")
+            value: walletValue
         }, callback);
     }
 

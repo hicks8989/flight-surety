@@ -2,7 +2,7 @@
 import DOM from './dom';
 import Contract from './contract';
 import './flightsurety.css';
-
+import { ethers } from 'ethers';
 
 (async() => {
 
@@ -11,9 +11,13 @@ import './flightsurety.css';
     let contract = new Contract('localhost', () => {
 
         // Read transaction
-        contract.isOperational((error, result) => {
+        contract.isOperational(async (error, result) => {
             console.log(error,result);
             display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
+
+            contract.flights.forEach(async flight => {
+                displayFlight(await contract.getFlight(flight));
+            });
         });
 
         // User-submitted transaction
@@ -35,10 +39,9 @@ import './flightsurety.css';
         });
 
         DOM.elid('pay-airline').addEventListener('click', () => {
-            let airline = DOM.elid("airline-fund-address").value;
             let value = DOM.elid("airline-value").value;
             // Write transaction
-            contract.payAirline(airline, value, (err, res) => {
+            contract.payAirline(value, (err, res) => {
                 alert("Successfully paid airline fee");
             });
         });
@@ -92,13 +95,15 @@ function display(title, description, results) {
         row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
         row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
         section.appendChild(row);
-    })
+    });
     displayDiv.append(section);
 }
 
-
-
-
-
-
-
+function displayFlight(flight) {
+    let el = document.createElement("option");
+    const name = ethers.utils.toUtf8Bytes(flight.name);
+    const timestamp = new Date(flight.timestamp);
+    el.text = `${name} - ${timestamp}`;
+    el.value = flight.name;
+    DOM.elid("flights").add(el);
+}

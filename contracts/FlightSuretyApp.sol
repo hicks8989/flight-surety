@@ -168,6 +168,7 @@ contract FlightSuretyApp {
     modifier requireInsuranceFee()
     {
         require(msg.value > 0, "Insurance must be greater than 0");
+        _;
     }
 
     /********************************************************************************************/
