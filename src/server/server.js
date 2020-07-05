@@ -1,11 +1,27 @@
 import Config from './config.json';
+import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import express from 'express';
-import { flightSuretyData, flightSuretyApp, web3 } from './instance';
+import Web3 from 'web3';
+
 require("babel-core/register");
 require("babel-polyfill");
+
+// Configuration:
 let config = Config['localhost'];
+
+// Web3:
+let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 let defaultAccount = web3.eth.defaultAccount;
+
+// FlightSuretyApp contract:
 let appAddress = config.appAddress;
+let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, appAddress);
+
+// FlightSuretyData contract:
+let dataAddress = config.dataAddress;
+let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, dataAddress);
+
 let accounts = [];
 let oracles = {};
 
@@ -24,7 +40,7 @@ const authorizeContract = async () => {
 // Function to get accounts:
 const getAccounts = async () => {
   try {
-    await web3.eth.getAccounts();
+    return await web3.eth.getAccounts();
   } catch(e) {
     console.log("Errors getting accounts", e);
   }
@@ -52,7 +68,7 @@ const registerOracles = async () => {
 // Create a function to register a new oracle:
 const registerOracle = async (address) => {
   try {
-    await flightSuretyApp.methods.registerOracle.send({
+    await flightSuretyApp.methods.registerOracle().send({
       from: address,
       value: web3.utils.toWei('1', 'ether'),
       gas: 3000000
