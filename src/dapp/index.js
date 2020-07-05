@@ -12,69 +12,86 @@ import { ethers } from 'ethers';
 
         // Read transaction
         contract.isOperational(async (error, result) => {
-            console.log(error,result);
             display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
 
-            contract.flights.forEach(async flight => {
-                displayFlight(await contract.getFlight(flight));
+            contract.flights.forEach(flight => {
+                displayFlight(flight, "flight-numbers");
+                displayFlight(flight, "flights");
             });
+
+            contract.airlines.forEach(async address => {
+                let airline = await contract.getAirline(address);
+
+                airline = {
+                    address,
+                    name: ethers.utils.parseBytes32String(airline[0])
+                }
+
+                displayAirline(airline, "airlines");
+                displayAirline(airline, "from-airline");
+                displayAirline(airline, "paying-airline");
+            })
         });
 
         // User-submitted transaction
-        DOM.elid('submit-oracle').addEventListener('click', () => {
-            let flight = DOM.elid('flight-number').value;
+        DOM.elid('submit-oracle').addEventListener('click', async () => {
+            let flight = DOM.elid('flight-numbers').value;
             // Write transaction
-            contract.fetchFlightStatus(flight, (error, result) => {
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
+            await contract.fetchFlightStatus(flight, (error, result) => {
+                const number = ethers.utils.parseBytes32String(result.flight);
+                let date = new Date(Number(result.timestamp));
+                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: number + ' - ' + date} ]);
             });
         });
 
-        DOM.elid('register-airline').addEventListener('click', () => {
+        DOM.elid('register-airline').addEventListener('click', async () => {
             let airline = DOM.elid('airline-address').value;
             let name = DOM.elid('airline-name').value;
             // Write transaction
-            contract.registerAirline(airline, name, (err, res) => {
-                alert("Airline was successfully registered");
+            await contract.registerAirline(airline, name, (err, res) => {
+                display('Register Airline', 'Registers an Airline', [ { label: 'Register Airline', error: error, value: result} ]);
             });
         });
 
-        DOM.elid('pay-airline').addEventListener('click', () => {
+        DOM.elid('pay-airline').addEventListener('click', async () => {
             let value = DOM.elid("airline-value").value;
             // Write transaction
-            contract.payAirline(value, (err, res) => {
+            await contract.payAirline(value, (err, res) => {
+                console.log(err);
                 alert("Successfully paid airline fee");
             });
         });
 
-        DOM.elid('register-flight').addEventListener('click', () => {
+        DOM.elid('register-flight').addEventListener('click', async () => {
             let flight = DOM.elid("flight").value;
-            let timestamp = DOM.elid("flight-timestamp").value;
+            let timestamp = DOM.elid("flight-time").value;
+
             // Write transaction
-            contract.registerFlight(flight, timestamp, (err, res) => {
+            await contract.registerFlight(flight, timestamp, (err, res) => {
                 alert("Successfully registered flight");
             });
         })
 
-        DOM.elid('buy').addEventListener('click', () => {
-            let flight = DOM.elid("flight-name").value;
+        DOM.elid('buy').addEventListener('click', async () => {
+            let flight = DOM.elid("flights").value;
             let value = DOM.elid("insurance-value").value;
             // Write transaction
-            contract.buy(flight, value, (err, res) => {
+            await contract.buy(flight, value, (err, res) => {
                 alert("Successfully bought insurance");
             });
         });
 
-        DOM.elid('withdraw').addEventListener('click', () => {
+        DOM.elid('withdraw').addEventListener('click', async () => {
             let value = DOM.elid("withdraw-value").value;
             // Write transaction
-            contract.withdraw(value, (err, res) => {
+            await contract.withdraw(value, (err, res) => {
                 alert("Successfully withdrew funds");
             });
         });
 
-        DOM.elid('get-passenger-balance').addEventListener('click', () => {
+        DOM.elid('get-passenger-balance').addEventListener('click', async () => {
             // Write transaction
-            contract.getPassengerBalance((err, res) => {
+            await contract.getPassengerBalance((err, res) => {
                 console.log("Successfully got passenger balance");
             });
 
@@ -99,11 +116,16 @@ function display(title, description, results) {
     displayDiv.append(section);
 }
 
-function displayFlight(flight) {
+function displayFlight(flight, id) {
     let el = document.createElement("option");
-    const name = ethers.utils.toUtf8Bytes(flight.name);
-    const timestamp = new Date(flight.timestamp);
-    el.text = `${name} - ${timestamp}`;
-    el.value = flight.name;
-    DOM.elid("flights").add(el);
+    el.text = ethers.utils.parseBytes32String(flight);
+    el.value = flight;
+    DOM.elid(id).add(el);
+}
+
+function displayAirline(airline, id) {
+    let el = document.createElement("option");
+    el.text = airline.name;
+    el.value = airline.address;
+    DOM.elid(id).add(el);
 }

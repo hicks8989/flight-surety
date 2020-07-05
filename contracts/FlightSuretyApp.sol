@@ -404,7 +404,6 @@ contract FlightSuretyApp {
         external
         requireIsOperational
         requireCreditFunds(value)
-        view
     {
         msg.sender.transfer(value);
         data.pay(msg.sender, value);
