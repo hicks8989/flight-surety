@@ -168,6 +168,7 @@ contract FlightSuretyApp {
     modifier requireInsuranceFee()
     {
         require(msg.value > 0, "Insurance must be greater than 0");
+        _;
     }
 
     /********************************************************************************************/
@@ -403,7 +404,6 @@ contract FlightSuretyApp {
         external
         requireIsOperational
         requireCreditFunds(value)
-        view
     {
         msg.sender.transfer(value);
         data.pay(msg.sender, value);
