@@ -282,7 +282,6 @@ contract FlightSuretyData {
         external
         requireIsOperational
         requireContractAuthorized
-        payable
     {
         // Create a new insurance:
         insurances[_flight].push(Insurance(_address, value, false));
