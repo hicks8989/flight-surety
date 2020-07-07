@@ -234,4 +234,13 @@ contract('Flight Surety Tests', async (accounts) => {
 
     assert(!reverted, "Invalid insurance purchase");
   });
+
+  it("(Insurance) can fetch flight insurance", async() => {
+    const result = await config.flightSuretyData.getInsurance(accounts[6], flights[0]);
+
+    assert.equal(result[0], accounts[6], "Invalid address");
+    assert(new BigNumber(result[1]).isEqualTo(web3.utils.toWei("1", "ether")), "Invalid insurance value");
+    assert(!result[2], "Invalid payment status");
+    assert(result[3], "Invalid registration status");
+  });
 });
