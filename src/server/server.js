@@ -24,6 +24,7 @@ let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, dataAddress);
 
 let accounts = [];
 let oracles = {};
+let flights = {};
 
 
 const authorizeContract = async () => {
@@ -58,7 +59,7 @@ const registerOracles = async () => {
 
       // Get the indexes:
       const indexes = await getMyIndexes(accounts[i]);
-      oracles[i] = accounts[indexes];
+      oracles[accounts[i]] = indexes;
     }
   } catch(e) {
     console.log("Unable to register oracles:", e);
@@ -85,7 +86,7 @@ const registerOracle = async (address) => {
 // function to get oracle indexes:
 const getMyIndexes = async (address) => {
   try {
-    const indexes = await flightSuretyApp.methods.getMyIndexes.call({
+    const indexes = await flightSuretyApp.methods.getMyIndexes().call({
       from: address,
       gas: 500000
     });
@@ -96,11 +97,45 @@ const getMyIndexes = async (address) => {
   }
 }
 
-flightSuretyApp.events.OracleRequest({
+flightSuretyApp.events.FlightStatusInfo({
   fromBlock: 0
 }, function (error, event) {
-  if (error) console.log(error)
-  console.log(event)
+  if (error) {
+    console.log(error);
+  } else {
+    flights[event.returnValues.flight] = event.returnValues.statusCode;
+    console.log(`Flight ${event.returnValues.flight} update: ${event.returnValues.status}`);
+  }
+})
+
+flightSuretyApp.events.OracleRequest({
+  fromBlock: 0
+}, async function (error, event) {
+  if (error) {
+    console.log(error);
+  } else {
+    const { index, airline, flight, timestamp } = event.returnValues;
+
+    // Get a random status code:
+    const statusCode = Math.ceil(Math.random() * 5) * 10;
+
+    for (let oracle in oracles) {
+      if (flights[flight] != 0) {
+        return;
+      }
+      if (oracles[oracle].includes(index)) {
+
+        try {
+          await flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode).send({
+            from: oracle,
+            gas: 500000
+          });
+        } catch(e) {
+          console.log(e);
+        }
+      }
+    }
+  }
 });
 
 const app = express();
