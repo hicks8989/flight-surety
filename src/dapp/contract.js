@@ -15,6 +15,7 @@ export default class Contract {
         this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, this.config.dataAddress);
         this.airlines = [];
         this.flights = [];
+        this.passengers = [];
         this.balance = null;
         this.passengers = [];
     }
@@ -67,7 +68,7 @@ export default class Contract {
         for (let i = 0; i < 3; i++) {
             try {
 
-                await this.flightSuretyApp.methods.registerAirline(accts[i + 1], airlines[i])
+                await this.flightSuretyApp.methods.registerAirline(accts[i + 1], airlines[i + 1])
                 .send({
                     from: this.owner,
                     gas: 3000000
@@ -134,42 +135,41 @@ export default class Contract {
         }, callback);
     }
 
-    async getPassengerBalance(callback) {
+    async getPassengerBalance(from, callback) {
         let self = this;
 
         self.balance = await self.flightSuretyApp.methods.getPassengerBalance().call({
-            from: self.owner
+            from
         }, callback);
     }
 
-    async buy(flight, value, callback) {
+    async buy(from, flight, value, callback) {
         let self = this;
-        console.log(await self.flightSuretyApp.methods.getFlight(flight).call());
 
         await self.flightSuretyApp.methods.buy(flight).send({
-            from: self.owner,
+            from,
             value: self.web3.utils.toWei(value, "ether"),
             gas: 3000000
         }, callback);
     }
 
-    async withdraw(value, callback) {
+    async withdraw(from, value, callback) {
         let self = this;
 
         await self.flightSuretyApp.methods.withdraw(self.web3.utils.toWei(value, "ether")).send({
-            from: self.owner,
+            from,
             gas: 3000000
         }, callback);
     }
 
-    async registerFlight(flight, timestamp, callback) {
+    async registerFlight(from, flight, timestamp, callback) {
         let self = this;
 
         flight = ethers.utils.formatBytes32String(flight);
         timestamp = Number(new Date(timestamp));
 
         await self.flightSuretyApp.methods.registerFlight(flight, timestamp).send({
-            from: self.owner,
+            from,
             gas: 3000000
         }, callback);
     }

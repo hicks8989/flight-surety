@@ -72,6 +72,12 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireContractHasFunds(uint256 value)
+    {
+        require(address(this).balance >= value, "Contract does not have enough funds to pay out insurance costs");
+        _;
+    }
+
     modifier requireAirlineNotRegistered(address _address)
     {
         bool isRegistered;
@@ -136,7 +142,7 @@ contract FlightSuretyApp {
     modifier requireLessThanMaxInsurance(bytes32 flight, uint256 max)
     {
         uint256 value;
-        ( , value, ) = data.getInsurance(msg.sender, flight);
+        ( , value, , ) = data.getInsurance(msg.sender, flight);
         value = value.add(msg.value);
         require(value <= max, "Investment greater than maximum value");
         _;
@@ -372,7 +378,7 @@ contract FlightSuretyApp {
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus(address airline, string memory flight, uint256 timestamp)
+    function fetchFlightStatus(address airline, bytes32 flight, uint256 timestamp)
         public
     {
         uint8 index = getRandomIndex(msg.sender);
@@ -403,6 +409,7 @@ contract FlightSuretyApp {
     function withdraw(uint256 value)
         external
         requireIsOperational
+        requireContractHasFunds(value)
         requireCreditFunds(value)
     {
         msg.sender.transfer(value);
@@ -459,7 +466,7 @@ contract FlightSuretyApp {
     // Event fired when flight status request is submitted
     // Oracles track this and if they have a matching index
     // they fetch data and submit a response
-    event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
+    event OracleRequest(uint8 index, address airline, bytes32 flight, uint256 timestamp);
 
 
     // Register an oracle with the contract

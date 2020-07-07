@@ -11,7 +11,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     address private contractOwner;                                      // Account used to deploy contract
-    bool private operational = true;                                // Blocks all state changes throughout the contract if false
+    bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
     struct Airline {
         bytes32 name;
@@ -31,6 +31,7 @@ contract FlightSuretyData {
         address passenger;
         uint256 value;
         bool isPaid;
+        bool isRegistered;
     }
 
     // Airline Variables:
@@ -43,7 +44,9 @@ contract FlightSuretyData {
     bytes32[] private flightKeys;
 
     // Insurance Variables:
-    mapping(bytes32 => Insurance[]) insurances; // Flight to Insurance
+    mapping(bytes32 => bytes32[]) passengerKeys; // Flight to passenger address
+    mapping(address => bytes32[]) insuranceKeys; // Passenger address to insurance key
+    mapping(bytes32 => Insurance) insurances;
     mapping(address => uint256) insuranceBalances;
 
     // Authorized Contracts:
@@ -99,12 +102,6 @@ contract FlightSuretyData {
     modifier requireContractAuthorized()
     {
         require(authorizedContracts[msg.sender], "Contract is unautorized");
-        _;
-    }
-
-    modifier requireContractHasFunds(uint256 value)
-    {
-        require(address(this).balance >= value, "Contract does not have enough funds to pay out insurance costs");
         _;
     }
 
@@ -282,10 +279,16 @@ contract FlightSuretyData {
         external
         requireIsOperational
         requireContractAuthorized
-        payable
     {
-        // Create a new insurance:
-        insurances[_flight].push(Insurance(_address, value, false));
+        bytes32 insuranceKey = getInsuranceKey(_address, _flight);
+        if(insurances[insuranceKey].isRegistered) {
+            insurances[insuranceKey].value = insurances[insuranceKey].value.add(value);
+        } else {
+            // Create a new insurance:
+            insurances[insuranceKey] = Insurance(_address, value, false, true);
+            passengerKeys[_flight].push(insuranceKey);
+            insuranceKeys[_address].push(insuranceKey);
+        }
 
         // Update airlines balance:
         address airline;
@@ -304,12 +307,14 @@ contract FlightSuretyData {
     {
         address airline;
         ( , airline, , , ) = _getFlight(flight);
-        for(uint256 i = 0; i < insurances[flight].length; i++) {
-            Insurance memory insurance = insurances[flight][i];
+        for(uint256 i = 0; i < passengerKeys[flight].length; i++) {
+            bytes32 insuranceKey = passengerKeys[flight][i];
+            Insurance memory insurance = insurances[insuranceKey];
             if (insurance.isPaid == false) {
                 uint256 value = insurance.value.mul(payoutFactor).div(100);
                 address passenger = insurance.passenger;
-                _creditInsuree(insurance, passenger, value);(insurance, passenger, value);
+                insurances[insuranceKey].isPaid = true;
+                insuranceBalances[passenger] = insuranceBalances[passenger].add(value);
 
                 airlineBalances[airline] = airlineBalances[airline].sub(value);
             }
@@ -317,32 +322,15 @@ contract FlightSuretyData {
         }
     }
 
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-    */
-    function _creditInsuree(Insurance memory insurance, address passenger, uint256 value)
-        internal
-    {
-        insurance.isPaid = true;
-        insuranceBalances[passenger] = insuranceBalances[passenger].add(value);
-    }
-
     function getInsurance(address _address, bytes32 flight)
         external
         view
-        returns(address, uint256, bool)
+        returns(address, uint256, bool, bool)
     {
-        Insurance memory insurance = insurances[bytes32(0)][0];
+        bytes32 insuranceKey = getInsuranceKey(_address, flight);
+        Insurance memory insurance = insurances[insuranceKey];
 
-        for(uint256 i = 0; i < insurances[flight].length; i++) {
-            if (insurances[flight][i].passenger == _address) {
-                insurance = insurances[flight][i];
-                break;
-            }
-        }
-
-        return(insurance.passenger, insurance.value, insurance.isPaid);
+        return(insurance.passenger, insurance.value, insurance.isPaid, insurance.isRegistered);
     }
 
     function getInsuranceBalance(address _address)
@@ -365,7 +353,6 @@ contract FlightSuretyData {
         external
         requireIsOperational
         requireContractAuthorized
-        requireContractHasFunds(value)
     {
         insuranceBalances[_address] = insuranceBalances[_address].sub(value);
     }
@@ -376,6 +363,14 @@ contract FlightSuretyData {
         returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
+    }
+
+    function getInsuranceKey(address passenger, bytes32 flight)
+        internal
+        pure
+        returns(bytes32)
+    {
+        return keccak256(abi.encodePacked(passenger, flight));
     }
 
 }

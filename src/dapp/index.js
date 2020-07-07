@@ -30,7 +30,13 @@ import { ethers } from 'ethers';
                 displayAirline(airline, "airlines");
                 displayAirline(airline, "from-airline");
                 displayAirline(airline, "paying-airline");
-            })
+            });
+
+            contract.passengers.forEach(async passenger => {
+                displayPassenger(passenger, "purchaser");
+                displayPassenger(passenger, "withdrawer");
+                displayPassenger(passenger, "passenger");
+            });
         });
 
         // User-submitted transaction
@@ -63,35 +69,39 @@ import { ethers } from 'ethers';
         });
 
         DOM.elid('register-flight').addEventListener('click', async () => {
+            let airline = DOM.elid("airlines").value;
             let flight = DOM.elid("flight").value;
             let timestamp = DOM.elid("flight-time").value;
 
             // Write transaction
-            await contract.registerFlight(flight, timestamp, (err, res) => {
+            await contract.registerFlight(airline, flight, timestamp, (err, res) => {
                 alert("Successfully registered flight");
             });
         })
 
         DOM.elid('buy').addEventListener('click', async () => {
+            let passenger = DOM.elid("purchaser").value;
             let flight = DOM.elid("flights").value;
             let value = DOM.elid("insurance-value").value;
             // Write transaction
-            await contract.buy(flight, value, (err, res) => {
+            await contract.buy(passenger, flight, value, (err, res) => {
                 alert("Successfully bought insurance");
             });
         });
 
         DOM.elid('withdraw').addEventListener('click', async () => {
+            let passenger = DOM.elid("withdrawer").value;
             let value = DOM.elid("withdraw-value").value;
             // Write transaction
-            await contract.withdraw(value, (err, res) => {
+            await contract.withdraw(passenger, value, (err, res) => {
                 alert("Successfully withdrew funds");
             });
         });
 
         DOM.elid('get-passenger-balance').addEventListener('click', async () => {
+            let passenger = DOM.elid("passenger").value;
             // Write transaction
-            await contract.getPassengerBalance((err, res) => {
+            await contract.getPassengerBalance(passenger, (err, res) => {
                 console.log("Successfully got passenger balance");
             });
 
@@ -127,5 +137,12 @@ function displayAirline(airline, id) {
     let el = document.createElement("option");
     el.text = airline.name;
     el.value = airline.address;
+    DOM.elid(id).add(el);
+}
+
+function displayPassenger(passenger, id) {
+    let el = document.createElement("option");
+    el.text = passenger;
+    el.value = passenger;
     DOM.elid(id).add(el);
 }

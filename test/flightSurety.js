@@ -218,4 +218,29 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result[1], flights[1], "Invalid flight: 2");
     assert.equal(result[2], flights[2], "Invalid flight: 3");
   });
+
+  it("(Insurance) can let a passenger invest in flight insurance", async() => {
+    let reverted = false;
+
+    try {
+      await config.flightSuretyApp.buy(flights[0], {
+        from: accounts[6],
+        value: web3.utils.toWei("1", "ether")
+      });
+    } catch(e) {
+      reverted = true;
+      console.log(e);
+    }
+
+    assert(!reverted, "Invalid insurance purchase");
+  });
+
+  it("(Insurance) can fetch flight insurance", async() => {
+    const result = await config.flightSuretyData.getInsurance(accounts[6], flights[0]);
+
+    assert.equal(result[0], accounts[6], "Invalid address");
+    assert(new BigNumber(result[1]).isEqualTo(web3.utils.toWei("1", "ether")), "Invalid insurance value");
+    assert(!result[2], "Invalid payment status");
+    assert(result[3], "Invalid registration status");
+  });
 });
