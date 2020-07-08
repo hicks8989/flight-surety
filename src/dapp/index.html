@@ -23,8 +23,57 @@
 
         <div id="display-wrapper" class="top-20">
         </div>
+
         <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+            <label class="form"><strong>Submit To Oracle: </strong></label>
+            Flight number:<select id="flight-numbers"></select>
+            <button class="btn btn-primary" id="submit-oracle"> Submit To Oracle</button>
+        </div>
+
+        <div class="row top-20">
+            <label class="form"><strong>Register Airline: </strong></label>
+            From: <select id="from-airline"></select>
+            Airline address:<input type="text" id="airline-address">
+            Airline name:<input type="text" id="airline-name">
+            <button class="btn btn-primary" id="register-airline"> Register Airline</button>
+        </div>
+
+
+        <div class="row top-20">
+            <label class="form"><strong>Pay airline registration fee: </strong></label>
+            Airline: <select id="paying-airline"></select>
+            Fund: <input type="text" id="airline-value"/>eth
+            <button class="btn btn-primary" id="pay-airline">Fund Airline</button>
+        </div>
+
+         <div class="row top-20">
+            <label class="form"><strong>Register flight: </strong></label>
+            Airline: <select id="airlines"></select>
+            Flight: <input type="text" id="flight">
+            Timestamp: <input type="text" id="flight-time">
+            <button class="btn btn-primary" id="register-flight">Register flight</button>
+        </div>
+
+        <div class="row top-20">
+            <label for="flight"><strong>Purchase Insurance: </strong></label>
+            Passenger: <select id="purchaser"></select>
+            Flight: <select id="flights"></select>
+            Amount: <input type="text" id="insurance-value"/> eth
+            <button class="btn btn-primary" id="buy">Purchase</button>
+        </div>
+
+        <div class="row top-20">
+            <label for="flight"><strong>Show insurance: </strong></label>
+            Passenger: <select id="passenger"></select>
+            <button class="btn btn-primary" id="get-passenger-balance"> show Funds</button>
+        </div>
+
+
+        <div class="row top-20">
+            <label for="flight"><strong>Withdraw funds: </strong></label>
+            Passenger: <select id="withdrawer"></select>
+            <input type="text" id="withdraw-value"> eth
+            <button class="btn btn-primary" id="withdraw"> Withdraw Funds</button>
         </div>
     </main>
 
