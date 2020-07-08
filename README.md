@@ -24,7 +24,7 @@ In order to get this application running on your machine, you will need:
 To run a local instance of the project, you must first install project files and dependencies. To get started doing this, use the `git clone` command to clone the repository to your local machine:
 
 ```
-> git clone https://github.com/hicks8989/flightsurety
+> git clone https://github.com/hicks8989/flight-surety
 ```
 
 Next, change to the project root directory:
