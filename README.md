@@ -69,7 +69,7 @@ Instructions for running each are below:
 #### Client
 The client uses `webpack` to run a local instance of the client on your machine. Upon running webpack, the client should look like this:
 
-![Client Screenshot](./screenshots/client.jpg)
+![Client Screenshot](https://github.com/hicks8989/flight-surety/blob/dev/screenshots/client.JPG)
 
 In order to run the client, use the `npm run dev` command in a new terminal window:
 
@@ -80,7 +80,7 @@ In order to run the client, use the `npm run dev` command in a new terminal wind
 #### Server
 The server uses `webpack` to run a local instance of the server on your machine. Upon running webpack, the server should look like this:
 
-![Server Screenshot](./screenshots/server.jpg)
+![Server Screenshot](https://github.com/hicks8989/flight-surety/blob/dev/screenshots/server.JPG)
 
 In order to run the server, use the `npm run server` command in a new termninal window:
 
@@ -110,7 +110,7 @@ truffle(develop)> test
 
 There are 18 test cases provided. Upon running the tests, you should get back all 18 passing:
 
-![Test](./screenshots/test.jpg)
+![Test](https://github.com/hicks8989/flight-surety/blob/dev/screenshots/test.JPG)
 
 ## Built With
 * [Ethereum](https://ethereum.org) - Ethereum is a decentralized platform that runs smart contracts.
