@@ -3,6 +3,7 @@ import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
 import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import express from 'express';
 import Web3 from 'web3';
+import { ethers } from 'ethers';
 
 require("babel-core/register");
 require("babel-polyfill");
@@ -104,7 +105,7 @@ flightSuretyApp.events.FlightStatusInfo({
     console.log(error);
   } else {
     flights[event.returnValues.flight] = event.returnValues.statusCode;
-    console.log(`Flight ${event.returnValues.flight} update: ${event.returnValues.status}`);
+    console.log(`Flight ${ethers.utils.parseBytes32String(event.returnValues.flight)} update: ${event.returnValues.status}`);
   }
 })
 
@@ -120,7 +121,7 @@ flightSuretyApp.events.OracleRequest({
     const statusCode = Math.ceil(Math.random() * 5) * 10;
 
     for (let oracle in oracles) {
-      if (flights[flight] != 0) {
+      if (flights[flight]) {
         return;
       }
       if (oracles[oracle].includes(index)) {
